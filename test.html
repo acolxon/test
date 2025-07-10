@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Прохождение теста</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f7f7f7;
+      color: #222;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    a {
+      display: inline-block;
+      margin-bottom: 20px;
+      text-decoration: none;
+      color: #007bff;
+    }
+    form > div {
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    label {
+      display: block;
+      margin: 5px 0;
+      cursor: pointer;
+    }
+    button {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #result {
+      margin-top: 30px;
+      font-size: 18px;
+      text-align: center;
+    }
+    .status-correct {
+      color: green;
+      font-weight: bold;
+    }
+    .status-incorrect {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <a href="add-test.html">➕ Добавить вопрос</a>
+  <h1>Тест по курсу</h1>
+  <form id="testForm"></form>
+  <button onclick="submitTest()">Завершить тест</button>
+  <div id="result"></div>
+
+  <script>
+    let questions = [];
+    fetch('api/get_test.php?course_id=1')
+      .then(res => res.json())
+      .then(data => {
+        questions = data;
+        const form = document.getElementById('testForm');
+
+        data.forEach((q, i) => {
+          const qBlock = document.createElement('div');
+          qBlock.innerHTML += `<p>${i + 1}. ${q.question_text} <span id="q-status-${q.id}"></span></p>`;
+          q.answers.forEach(a => {
+            qBlock.innerHTML += `
+              <label><input type="radio" name="q${q.id}" value="${a.id}"> ${a.answer_text}</label>
+            `;
+          });
+          form.appendChild(qBlock);
+        });
+      })
+      .catch(err => {
+        document.getElementById('result').innerText = 'Ошибка загрузки вопросов!';
+        console.error('Ошибка fetch get_test:', err);
+      });
+
+    function submitTest() {
+      const answers = {};
+      questions.forEach(q => {
+        const selected = document.querySelector(`input[name='q${q.id}']:checked`);
+        answers[q.id] = selected ? selected.value : null;
+      });
+
+      fetch('api/check_test.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(answers)
+      })
+        .then(res => res.json())
+        .then(score => {
+          const resultDiv = document.getElementById('result');
+
+          if (typeof score.correct !== 'undefined' && typeof score.total !== 'undefined') {
+            resultDiv.innerHTML = `<p>Ваш результат: <strong>${score.correct}</strong> из <strong>${score.total}</strong></p>`;
+
+            score.results.forEach(res => {
+              const statusSpan = document.getElementById(`q-status-${res.question_id}`);
+              if (statusSpan) {
+                statusSpan.textContent = res.is_correct ? '✅' : '❌';
+                statusSpan.className = res.is_correct ? 'status-correct' : 'status-incorrect';
+              }
+            });
+          } else {
+            resultDiv.innerText = 'Ошибка: некорректный формат ответа сервера';
+            console.error('Некорректный ответ:', score);
+          }
+        })
+        .catch(err => {
+          document.getElementById('result').innerText = 'Ошибка при отправке ответов';
+          console.error('Ошибка fetch check_test:', err);
+        });
+    }
+  </script>
+</body>
+</html>

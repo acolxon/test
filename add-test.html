@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Добавить тест</title>
+</head>
+<body>
+  <h1>Добавить вопрос к курсу</h1>
+  <form id="addTestForm">
+    <label>Курс ID: <input type="number" name="course_id" value="1" required></label><br>
+    <label>Вопрос: <input type="text" name="question" required></label><br>
+    <label>Варианты ответов:</label><br>
+    <input type="text" name="answer[]" placeholder="Ответ 1" required><input type="checkbox" name="correct[]" value="0"> Правильный<br>
+    <input type="text" name="answer[]" placeholder="Ответ 2" required><input type="checkbox" name="correct[]" value="1"> Правильный<br>
+    <input type="text" name="answer[]" placeholder="Ответ 3" required><input type="checkbox" name="correct[]" value="2"> Правильный<br>
+    <input type="text" name="answer[]" placeholder="Ответ 4" required><input type="checkbox" name="correct[]" value="3"> Правильный<br>
+    <button type="submit">Добавить</button>
+  </form>
+  <a href="test.html">Перейти к тесту</a>
+  <script>
+    document.getElementById('addTestForm').onsubmit = async function(e) {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const correctIndexes = [...formData.getAll('correct[]')].map(Number);
+      const data = {
+        course_id: formData.get('course_id'),
+        question: formData.get('question'),
+        answers: [],
+      };
+
+      const answers = formData.getAll('answer[]');
+      answers.forEach((text, i) => {
+        data.answers.push({ text, is_correct: correctIndexes.includes(i) });
+      });
+
+      await fetch('/api/create_test.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      alert('Вопрос добавлен!');
+      e.target.reset();
+    
+    }
+
+  </script>
+</body>
+</html>
