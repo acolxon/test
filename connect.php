@@ -1,6 +1,6 @@
 <?php
     $localhost = "localhost";
-    $dbname = "courses";
+    $dbname = "p-347186_test";
     $login = "p-347186_asylkhan";
     $pass = "asylkhan04";
     $charset = "utf8mb4";
